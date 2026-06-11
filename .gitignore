@@ -1,0 +1,14 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Trained model (too large for GitHub)
+backend/model/
+ml/emotion_model/
+
+# Secrets (we'll add these in Phase 4)
+.env
