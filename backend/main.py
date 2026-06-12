@@ -1,18 +1,13 @@
-# ---- Imports (all at the top, once) ----
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, EmailStr, Field 
+# ---- Imports ----
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timezone
 from transformers import pipeline
-from auth import hash_password, verify_password, create_access_token
-from database import users_collection, entries_collection
 from bson import ObjectId
-
-from database import users_collection
-from auth import hash_password
-
-from fastapi import Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from auth import decode_access_token
+from auth import hash_password, verify_password, create_access_token, decode_access_token
+from database import users_collection, entries_collection
 
 security = HTTPBearer()
 
@@ -26,6 +21,13 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 # ---- Create the app once ----
 app = FastAPI(title="MoodScribe Emotion API")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ---- Load the trained model once, at startup ----
 classifier = pipeline(
