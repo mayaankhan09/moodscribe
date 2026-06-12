@@ -1,9 +1,104 @@
+/*
+  Deep glassmorphism card.
+
+  Light behaviour:
+    - High blur (30px) blurs the coloured orbs behind it → frosted depth
+    - Asymmetric border: top bright (light source above), bottom dim (shadow)
+    - Inner top highlight simulates light bouncing off the glass surface
+
+  Hover behaviour:
+    - Card lifts (translateY) + very slight scale → feels "lifted off the page"
+    - ::before shimmer sweeps left-to-right → light refracting through glass
+*/
+
 .glass {
-  background: rgba(255, 255, 255, 0.55);          /* translucent white */
-  backdrop-filter: blur(20px);                     /* frost what's behind */
-  -webkit-backdrop-filter: blur(20px);             /* Safari support */
-  border: 1px solid rgba(255, 255, 255, 0.6);      /* soft light edge */
-  border-radius: 24px;                             /* rounded, Apple-like */
-  box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);   /* gentle lift */
-  padding: 24px;
+  /* Surface */
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px) saturate(190%) brightness(1.03);
+  -webkit-backdrop-filter: blur(30px) saturate(190%) brightness(1.03);
+
+  /* Directional border lighting (light from top-left) */
+  border-top:    1px solid var(--glass-border-t);
+  border-left:   1px solid var(--glass-border-t);
+  border-right:  1px solid var(--glass-border-s);
+  border-bottom: 1px solid var(--glass-border-b);
+
+  border-radius: 24px;
+
+  /* Layered shadows for depth */
+  box-shadow:
+    0 8px 32px var(--glass-shadow),
+    inset 0 1.5px 0 var(--glass-glow),   /* inner top highlight */
+    inset 0 -1px 0 rgba(0, 0, 0, 0.05);  /* inner bottom shadow  */
+
+  padding: 28px;
+  position: relative;
+  overflow: hidden;
+
+  /* Smooth on hover — separate durations per property */
+  transition:
+    transform     0.38s cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow    0.38s cubic-bezier(0.23, 1, 0.32, 1),
+    background    0.35s ease,
+    border-color  0.35s ease;
+
+  will-change: transform;
+}
+
+/* ---- Refraction shimmer sweep ---- */
+.glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  /* starts fully off-screen to the left */
+  left: -120%;
+  width: 55%;
+  height: 100%;
+
+  /* A bright band with soft edges — looks like light through glass */
+  background: linear-gradient(
+    105deg,
+    transparent              0%,
+    var(--glass-shimmer)    40%,
+    rgba(255,255,255, 0.30) 50%,
+    var(--glass-shimmer)    60%,
+    transparent             100%
+  );
+
+  transform: skewX(-12deg);
+  transition: left 0.72s cubic-bezier(0.23, 1, 0.32, 1);
+  pointer-events: none; /* never blocks clicks/inputs */
+  z-index: 10;
+}
+
+/* On hover: sweep to the right */
+.glass:hover::before {
+  left: 170%;
+}
+
+/* Card emerges forward on hover — light mode: deep black shadow */
+.glass:hover {
+  transform: translateY(-12px) scale(1.07);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.32),       /* deep black — object high off surface */
+    0 14px 28px rgba(0, 0, 0, 0.18),       /* tight near-shadow — ground contact   */
+    inset 0 1.5px 0 var(--glass-glow),
+    0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+/* Dark mode: swap to warm amber glow instead */
+[data-theme="dark"] .glass:hover {
+  box-shadow:
+    0 40px 80px rgba(255, 160, 50, 0.22),  /* warm amber far glow  */
+    0 14px 28px rgba(255, 120, 30, 0.14),  /* warm amber near glow */
+    inset 0 1.5px 0 var(--glass-glow),
+    0 0 0 1px rgba(255, 200, 100, 0.18);   /* warm border highlight */
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 640px) {
+  .glass {
+    border-radius: 20px;
+    padding: 20px;
+  }
 }

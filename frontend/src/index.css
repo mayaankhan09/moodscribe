@@ -1,91 +1,354 @@
-/* ---- Reset & base ---- */
+/* ---- Reset ---- */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* ===========================
+   DESIGN TOKENS
+   =========================== */
 :root {
-  /* Emotion colors from your spec */
-  --joy: #FFD66B;
-  --sadness: #6B9BD1;
-  --love: #FF8FB1;
-  --anger: #FF6B6B;
-  --fear: #9B7EDE;
+  /* Emotion palette — constant across themes */
+  --joy:      #FFD66B;
+  --sadness:  #6B9BD1;
+  --love:     #FF8FB1;
+  --anger:    #FF6B6B;
+  --fear:     #9B7EDE;
   --surprise: #4ECDC4;
+  --accent:   #6C63FF;
 
-  --accent: #6C63FF;
-  --text-primary: #1C1B2E;
+  /* ---- Light theme ---- */
+  --text-primary:   #1C1B2E;
   --text-secondary: #6B6880;
+
+  --bg-start: #EEF1F8;
+  --bg-mid:   #E9E4F5;
+  --bg-end:   #F3E9F5;
+
+  /* Glass surface */
+  --glass-bg:       rgba(255, 255, 255, 0.52);
+  --glass-border-t: rgba(255, 255, 255, 0.88);  /* top — bright, light from above */
+  --glass-border-s: rgba(255, 255, 255, 0.50);  /* sides */
+  --glass-border-b: rgba(255, 255, 255, 0.22);  /* bottom — dimmer */
+  --glass-glow:     rgba(255, 255, 255, 0.65);  /* inner top highlight */
+  --glass-shadow:   rgba(100, 90, 200, 0.13);
+  --glass-shimmer:  rgba(255, 255, 255, 0.24);  /* refraction sweep */
+
+  /* Depth orbs */
+  --orb-1: rgba(108,  99, 255, 0.18);
+  --orb-2: rgba(255, 143, 177, 0.15);
+  --orb-3: rgba( 78, 205, 196, 0.13);
+
+  /* Fields */
+  --field-bg:     rgba(255, 255, 255, 0.75);
+  --field-border: rgba(0, 0, 0, 0.08);
+  --field-color:  #1C1B2E;
+  --field-ph:     #9B98B0;
+}
+
+/* ---- Dark theme overrides ---- */
+[data-theme="dark"] {
+  --text-primary:   #E8E6F0;
+  --text-secondary: #9B98B0;
+
+  --bg-start: #0D0C18;
+  --bg-mid:   #120F1E;
+  --bg-end:   #140C1E;
+
+  --glass-bg:       rgba(22, 20, 40, 0.70);
+  --glass-border-t: rgba(255, 255, 255, 0.16);
+  --glass-border-s: rgba(255, 255, 255, 0.08);
+  --glass-border-b: rgba(0,   0,   0,  0.35);
+  --glass-glow:     rgba(255, 255, 255, 0.08);
+  --glass-shadow:   rgba(0, 0, 0, 0.55);
+  --glass-shimmer:  rgba(255, 255, 255, 0.07);
+
+  --orb-1: rgba(108,  99, 255, 0.30);
+  --orb-2: rgba(255, 143, 177, 0.22);
+  --orb-3: rgba( 78, 205, 196, 0.18);
+
+  --field-bg:     rgba(255, 255, 255, 0.07);
+  --field-border: rgba(255, 255, 255, 0.12);
+  --field-color:  #E8E6F0;
+  --field-ph:     #6B6880;
+}
+
+/* ===========================
+   BASE
+   =========================== */
+html {
+  height: 100%;
 }
 
 body {
-  /* The Apple-style system font stack */
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+  color: var(--text-primary);
+  min-height: 100vh;
   overflow-x: hidden;
 
-  /* The soft gradient the glass will frost over */
-  background: linear-gradient(135deg, #EEF1F8 0%, #E9E4F5 50%, #F3E9F5 100%);
+  background:
+    linear-gradient(135deg,
+      var(--bg-start) 0%,
+      var(--bg-mid)   50%,
+      var(--bg-end)   100%);
   background-attachment: fixed;
-  min-height: 100vh;
+
+  transition: background 0.4s ease, color 0.3s ease;
 }
+
+/* ===========================
+   DEPTH ORBS  (added via App.jsx)
+   =========================== */
+.orbs-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+.orb-1 {
+  width:  680px;
+  height: 680px;
+  background: radial-gradient(circle, var(--orb-1) 0%, transparent 70%);
+  top: -160px;
+  right: -140px;
+  animation: floatA 14s ease-in-out infinite;
+}
+
+.orb-2 {
+  width:  560px;
+  height: 560px;
+  background: radial-gradient(circle, var(--orb-2) 0%, transparent 70%);
+  bottom: -140px;
+  left: -120px;
+  animation: floatB 18s ease-in-out infinite;
+}
+
+.orb-3 {
+  width:  420px;
+  height: 420px;
+  background: radial-gradient(circle, var(--orb-3) 0%, transparent 70%);
+  top: 40%;
+  left: 40%;
+  animation: floatC 22s ease-in-out infinite;
+}
+
+@keyframes floatA {
+  0%,  100% { transform: translate(  0%,   0%) scale(1.00); }
+  33%        { transform: translate( -4%,   6%) scale(1.05); }
+  66%        { transform: translate(  5%,  -3%) scale(0.96); }
+}
+@keyframes floatB {
+  0%,  100% { transform: translate(  0%,   0%) scale(1.00); }
+  33%        { transform: translate(  5%,  -7%) scale(1.04); }
+  66%        { transform: translate( -4%,   5%) scale(0.97); }
+}
+@keyframes floatC {
+  0%,  100% { transform: translate(  0%,   0%) scale(1.00); }
+  50%        { transform: translate(-10%,  10%) scale(1.08); }
+}
+
+/* Content must sit above the orbs */
+.page-root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ===========================
+   FORM ELEMENTS
+   =========================== */
 .field {
   width: 100%;
+  display: block;
   padding: 14px 16px;
   margin-bottom: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--field-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.7);
+  background: var(--field-bg);
+  color: var(--field-color);
   font-size: 15px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background 0.3s, color 0.3s;
+}
+
+.field::placeholder {
+  color: var(--field-ph);
 }
 
 .field:focus {
   border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.15);
 }
 
+/* ===========================
+   BUTTON
+   =========================== */
 .btn-primary {
   width: 100%;
   padding: 14px;
   border: none;
   border-radius: 14px;
-  background: var(--accent);
-  color: white;
-  font-size: 16px;
+  background: linear-gradient(135deg, #6C63FF 0%, #8B5CF6 100%);
+  color: #fff;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
+  transition: transform 0.12s, opacity 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.35);
 }
 
-.btn-primary:hover {
-  opacity: 0.9;
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.93;
+  box-shadow: 0 6px 24px rgba(108, 99, 255, 0.45);
+  transform: translateY(-1px);
 }
 
-.btn-primary:active {
-  transform: scale(0.98);
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98) translateY(0);
 }
-/* Smooth entry animation for cards */
+
+.btn-primary:disabled {
+  cursor: not-allowed;
+}
+
+/* ===========================
+   CARD ENTRY ANIMATION
+   =========================== */
 .glass {
-  animation: fadeUp 0.4s ease;
+  animation: fadeSlideUp 0.35s cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0);    }
 }
 
-/* Phone screens */
+/* ===========================
+   SCROLLBAR
+   =========================== */
+::-webkit-scrollbar          { width: 6px; }
+::-webkit-scrollbar-track    { background: transparent; }
+::-webkit-scrollbar-thumb    { background: rgba(108, 99, 255, 0.28); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(108, 99, 255, 0.45); }
+
+/* ===========================
+   LOADING DOTS
+   =========================== */
+.loading-dots {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.35;
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.75); opacity: 0.35; }
+  40%            { transform: scale(1.1);  opacity: 1;    }
+}
+
+/* ===========================
+   NEW-ENTRY POP ANIMATION
+   Overrides the default fadeSlideUp for freshly saved cards.
+   =========================== */
+.entry-new {
+  animation: entryPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both !important;
+}
+
+@keyframes entryPop {
+  from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);    }
+}
+
+/* ===========================
+   ERROR BANNER
+   =========================== */
+.error-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(255, 107, 107, 0.10);
+  border: 1px solid rgba(255, 107, 107, 0.28);
+  border-radius: 12px;
+  color: var(--anger);
+  font-size: 13px;
+  line-height: 1.4;
+  animation: fadeSlideUp 0.25s ease both;
+}
+
+.error-banner__dismiss {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--anger);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  opacity: 0.65;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+
+.error-banner__dismiss:hover { opacity: 1; }
+
+/* ===========================
+   FIELD — DISABLED STATE
+   =========================== */
+.field:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ===========================
+   STATS GRID — RESPONSIVE
+   =========================== */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* ===========================
+   RESPONSIVE
+   =========================== */
 @media (max-width: 640px) {
-  .glass {
-    border-radius: 20px;
-    padding: 18px;
-  }
+  .orb-1 { width: 400px; height: 400px; }
+  .orb-2 { width: 360px; height: 360px; }
+  .orb-3 { width: 280px; height: 280px; }
 }
 
-/* Scrollbar polish */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-thumb { background: rgba(108, 99, 255, 0.3); border-radius: 10px; }
+@media (max-width: 420px) {
+  /* Stats cards: tighter padding, smaller value text */
+  .stats-grid { gap: 8px; }
+  .stat-value  { font-size: 20px !important; }
+  .stat-label  { font-size: 10px !important; }
+
+  /* Header: shrink title so it doesn't crowd the buttons */
+  .dash-title  { font-size: 22px !important; }
+}

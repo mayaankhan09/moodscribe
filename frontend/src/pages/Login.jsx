@@ -4,10 +4,10 @@ import api from '../api';
 import GlassCard from '../components/GlassCard';
 
 function Login() {
-  const [email, setEmail] = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error,    setError]    = useState('');
+  const [loading,  setLoading]  = useState(false);
   const navigate = useNavigate();
 
   async function handleLogin() {
@@ -30,14 +30,18 @@ function Login() {
   }
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', padding: '20px' }}>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center',
+                  minHeight: '100vh', padding: '20px' }}>
       <GlassCard style={{ width: '100%', maxWidth: '380px' }}>
         <h1 style={{ fontSize: '28px', marginBottom: '4px' }}>Welcome back</h1>
         <p style={{ color: 'var(--text-secondary)', marginBottom: '24px' }}>Log in to continue</p>
 
         <input
           className="field"
+          type="email"
           placeholder="Email"
+          aria-label="Email address"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -46,12 +50,18 @@ function Login() {
           className="field"
           type="password"
           placeholder="Password"
+          aria-label="Password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onKeyDown={handleKeyDown}
         />
 
-        {error && <p style={{ color: 'var(--anger)', fontSize: '14px', marginBottom: '12px' }}>{error}</p>}
+        {error && (
+          <p role="alert" style={{ color: 'var(--anger)', fontSize: '14px', marginBottom: '12px' }}>
+            {error}
+          </p>
+        )}
 
         <button
           className="btn-primary"
@@ -62,8 +72,10 @@ function Login() {
           {loading ? 'Logging in…' : 'Log in'}
         </button>
 
-        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-          New here? <Link to="/signup" style={{ color: 'var(--accent)' }}>Create an account</Link>
+        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px',
+                    color: 'var(--text-secondary)' }}>
+          New here?{' '}
+          <Link to="/signup" style={{ color: 'var(--accent)' }}>Create an account</Link>
         </p>
       </GlassCard>
     </div>
