@@ -14,6 +14,16 @@ const EMOTION_COLORS = {
   surprise: 'var(--surprise)',
 };
 
+/* Actual hex values — needed for opacity effects on the secondary chip */
+const EMOTION_HEX = {
+  joy:      '#FFD66B',
+  sadness:  '#6B9BD1',
+  love:     '#FF8FB1',
+  anger:    '#FF6B6B',
+  fear:     '#9B7EDE',
+  surprise: '#4ECDC4',
+};
+
 const EMOTION_EMOJI = {
   joy:      '😊',
   sadness:  '😢',
@@ -23,7 +33,7 @@ const EMOTION_EMOJI = {
   surprise: '😲',
 };
 
-/* Dark text on light emotion chips; white on darker ones */
+/* Light text on light-background chips; white on darker ones */
 const CHIP_TEXT_DARK = new Set(['joy', 'surprise']);
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -46,6 +56,24 @@ function calcStreak(entries) {
   return streak;
 }
 
+/**
+ * Build a calm natural-language summary of the top two emotions.
+ * e.g. "Mostly love (76%), with a hint of joy (14%)."
+ */
+function blendSentence(primary, primaryPct, secondary, secondaryPct) {
+  if (!secondary) return null;
+  const qualifier =
+    primaryPct >= 75 ? 'Mostly' :
+    primaryPct >= 55 ? 'Primarily' :
+                       'A mix of';
+  const hint =
+    secondaryPct < 10 ? 'just a trace of' :
+    secondaryPct < 20 ? 'a hint of' :
+    secondaryPct < 35 ? 'some' :
+                        'a fair amount of';
+  return `${qualifier} ${primary} (${primaryPct}%), with ${hint} ${secondary} (${secondaryPct}%).`;
+}
+
 /* ── LoadingDots ─────────────────────────────────────────── */
 function LoadingDots() {
   return (
@@ -61,17 +89,17 @@ function LoadingDots() {
 function Dashboard() {
   const [text,       setText]       = useState('');
   const [entries,    setEntries]    = useState([]);
-  const [saving,     setSaving]     = useState(false);   // save-in-progress
-  const [fetching,   setFetching]   = useState(true);    // initial page load
+  const [saving,     setSaving]     = useState(false);
+  const [fetching,   setFetching]   = useState(true);
   const [saveError,  setSaveError]  = useState('');
   const [fetchError, setFetchError] = useState('');
-  const [newestId,   setNewestId]   = useState(null);    // drive entry-pop animation
+  const [newestId,   setNewestId]   = useState(null);
   const [dark,       setDark]       = useState(
     () => document.documentElement.dataset.theme === 'dark'
   );
   const navigate = useNavigate();
 
-  /* Re-usable fetch — silent=true skips the loading indicator (used after save) */
+  /* Re-usable fetch (used by Try-again + after save) */
   async function loadEntries(silent = false) {
     if (!silent) { setFetching(true); setFetchError(''); }
     try {
@@ -89,7 +117,7 @@ function Dashboard() {
     }
   }
 
-  /* Initial load — inline async avoids the "setState in effect" lint warning */
+  /* Initial load — inline async to satisfy the react-hooks lint rule */
   useEffect(() => {
     async function init() {
       setFetching(true);
@@ -108,7 +136,6 @@ function Dashboard() {
       }
     }
     init();
-  // navigate is stable (from react-router) so this only runs once
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -119,7 +146,7 @@ function Dashboard() {
     try {
       const res = await api.post('/entries', { text });
       setText('');
-      await loadEntries(true);           // silent reload — no loading flicker
+      await loadEntries(true);
       setNewestId(res.data.id);
       setTimeout(() => setNewestId(null), 700);
     } catch (err) {
@@ -146,7 +173,7 @@ function Dashboard() {
     navigate('/login');
   }
 
-  /* ── Derived values ───────────────────────────────────── */
+  /* ── Derived values ─────────────────────────────────────── */
   const streak   = calcStreak(entries);
   const topMood  = topEmotion(entries);
   const topEmoji = topMood ? (EMOTION_EMOJI[topMood] || '💭') : '—';
@@ -154,14 +181,13 @@ function Dashboard() {
     weekday: 'long', month: 'long', day: 'numeric',
   });
 
-  /* Friendly hint beneath the textarea */
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   const inputHint =
-    text.length === 0  ? 'A sentence or two is a great start.' :
-    words < 5          ? `${text.length} chars · keep going…`  :
-                         `${text.length} chars`;
+    text.length === 0 ? 'A sentence or two is a great start.' :
+    words < 5         ? `${text.length} chars · keep going…`  :
+                        `${text.length} chars`;
 
-  /* ── Button styles ────────────────────────────────────── */
+  /* ── Shared button styles ───────────────────────────────── */
   const iconBtn = {
     background: 'var(--glass-bg)',
     backdropFilter: 'blur(16px)',
@@ -169,85 +195,62 @@ function Dashboard() {
     border: '1px solid var(--glass-border-t)',
     borderRadius: '50%',
     width: 40, height: 40,
-    cursor: 'pointer',
-    fontSize: 18,
+    cursor: 'pointer', fontSize: 18,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    transition: 'transform 0.2s',
-    flexShrink: 0,
+    transition: 'transform 0.2s', flexShrink: 0,
   };
-
   const pillBtn = {
     background: 'var(--glass-bg)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
     border: '1px solid var(--glass-border-t)',
-    borderRadius: 20,
-    padding: '8px 18px',
-    cursor: 'pointer',
-    fontSize: 13,
+    borderRadius: 20, padding: '8px 18px',
+    cursor: 'pointer', fontSize: 13,
     color: 'var(--text-secondary)',
-    transition: 'opacity 0.2s',
-    flexShrink: 0,
+    transition: 'opacity 0.2s', flexShrink: 0,
   };
 
-  /* ── Render ───────────────────────────────────────────── */
+  /* ── Render ─────────────────────────────────────────────── */
   return (
     <div style={{ maxWidth: 700, margin: '0 auto', padding: '28px 20px 60px' }}>
 
-      {/* ── Header ─────────────────────────────────────── */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 28,
-        gap: 12,
-        flexWrap: 'wrap',
-      }}>
+      {/* ── Header ── */}
+      <div style={{ display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'center', marginBottom: 28, gap: 12, flexWrap: 'wrap' }}>
         <div>
           <h1 className="dash-title" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.5px' }}>
             MoodScribe
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 3 }}>{today}</p>
         </div>
-
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-          <button
-            onClick={toggleTheme}
-            style={iconBtn}
+          <button onClick={toggleTheme} style={iconBtn}
             aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
+            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
             {dark ? '☀️' : '🌙'}
           </button>
-          <button onClick={logout} style={pillBtn} aria-label="Log out">
-            Log out
-          </button>
+          <button onClick={logout} style={pillBtn} aria-label="Log out">Log out</button>
         </div>
       </div>
 
-      {/* ── Stats row ──────────────────────────────────── */}
+      {/* ── Stats row ── */}
       <div className="stats-grid">
         {[
-          { value: entries.length,                   label: 'Entries',    },
-          { value: topEmoji,                          label: 'Top mood',   },
-          { value: streak ? `${streak} 🔥` : '—',   label: 'Day streak', },
+          { value: entries.length,                 label: 'Entries'    },
+          { value: topEmoji,                        label: 'Top mood'   },
+          { value: streak ? `${streak} 🔥` : '—', label: 'Day streak' },
         ].map(({ value, label }) => (
           <GlassCard key={label} style={{ padding: '18px 14px', textAlign: 'center' }}>
-            <div className="stat-value" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.1 }}>
-              {value}
-            </div>
-            <div
-              className="stat-label"
-              style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 5,
-                       textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}
-            >
+            <div className="stat-value" style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
+            <div className="stat-label" style={{ fontSize: 11, color: 'var(--text-secondary)',
+                           marginTop: 5, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 500 }}>
               {label}
             </div>
           </GlassCard>
         ))}
       </div>
 
-      {/* ── Write area ─────────────────────────────────── */}
+      {/* ── Write area ── */}
       <GlassCard style={{ marginBottom: 20 }}>
         <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase',
                     letterSpacing: '0.08em', color: 'var(--text-secondary)', marginBottom: 12 }}>
@@ -263,68 +266,50 @@ function Dashboard() {
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
         />
-
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-            {inputHint}
-          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{inputHint}</span>
           <button
             className="btn-primary"
             onClick={handleSave}
             disabled={saving || !text.trim()}
             aria-busy={saving}
-            style={{
-              width: 'auto', padding: '11px 28px',
-              opacity: saving || !text.trim() ? 0.5 : 1,
-              cursor:  saving || !text.trim() ? 'not-allowed' : 'pointer',
-            }}
+            style={{ width: 'auto', padding: '11px 28px',
+                     opacity: saving || !text.trim() ? 0.5 : 1,
+                     cursor:  saving || !text.trim() ? 'not-allowed' : 'pointer' }}
           >
             {saving ? 'Analyzing…' : 'Save entry'}
           </button>
         </div>
-
-        {/* Save-error banner */}
         {saveError && (
           <div role="alert" className="error-banner">
             <span>{saveError}</span>
-            <button
-              className="error-banner__dismiss"
-              onClick={() => setSaveError('')}
-              aria-label="Dismiss error"
-            >
-              ×
-            </button>
+            <button className="error-banner__dismiss" onClick={() => setSaveError('')}
+              aria-label="Dismiss error">×</button>
           </div>
         )}
       </GlassCard>
 
-      {/* ── Mood chart ─────────────────────────────────── */}
+      {/* ── Mood chart ── */}
       <MoodChart entries={entries} dark={dark} />
 
-      {/* ── Entries header ─────────────────────────────── */}
+      {/* ── Entries header ── */}
       <div style={{ display: 'flex', justifyContent: 'space-between',
                     alignItems: 'center', marginBottom: 14, marginTop: 4 }}>
         <h2 style={{ fontSize: 17, fontWeight: 600 }}>Your entries</h2>
         {!fetching && !fetchError && (
-          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-            {entries.length} total
-          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{entries.length} total</span>
         )}
       </div>
 
-      {/* ── Entries body: loading / error / empty / list ─ */}
+      {/* ── Entries body ── */}
       {fetching ? (
-        /* Initial loading */
         <GlassCard style={{ textAlign: 'center', padding: '44px 24px' }}>
           <LoadingDots />
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginTop: 14 }}
-             aria-live="polite">
-            Loading your entries…
-          </p>
+             aria-live="polite">Loading your entries…</p>
         </GlassCard>
 
       ) : fetchError ? (
-        /* Fetch error */
         <GlassCard style={{ textAlign: 'center', padding: '36px 24px' }}>
           <p style={{ fontSize: 28, marginBottom: 10 }}>🌐</p>
           <p role="alert" style={{ color: 'var(--text-primary)', fontSize: 15,
@@ -332,24 +317,15 @@ function Dashboard() {
             Couldn't reach the server
           </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14,
-                      marginBottom: 20, lineHeight: 1.6 }}>
-            {fetchError}
-          </p>
-          <button
-            className="btn-primary"
-            onClick={() => loadEntries()}
-            style={{ width: 'auto', padding: '10px 24px' }}
-          >
-            Try again
-          </button>
+                      marginBottom: 20, lineHeight: 1.6 }}>{fetchError}</p>
+          <button className="btn-primary" onClick={() => loadEntries()}
+            style={{ width: 'auto', padding: '10px 24px' }}>Try again</button>
         </GlassCard>
 
       ) : entries.length === 0 ? (
-        /* Empty state — warm and inviting */
         <GlassCard style={{ textAlign: 'center', padding: '52px 28px' }}>
           <div style={{ fontSize: 52, marginBottom: 16 }}>🌱</div>
-          <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 10,
-                      color: 'var(--text-primary)' }}>
+          <p style={{ fontSize: 16, fontWeight: 600, marginBottom: 10, color: 'var(--text-primary)' }}>
             Your journal is waiting
           </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.7,
@@ -360,13 +336,24 @@ function Dashboard() {
         </GlassCard>
 
       ) : (
-        /* Entry list */
         entries.map((entry) => {
-          const emoColor   = EMOTION_COLORS[entry.emotion] || 'var(--accent)';
-          const emoEmoji   = EMOTION_EMOJI[entry.emotion]  || '💭';
-          const chipText   = CHIP_TEXT_DARK.has(entry.emotion) ? '#1C1B2E' : '#fff';
-          const pct        = Math.round(entry.confidence * 100);
-          const isNew      = entry.id === newestId;
+          const primaryColor = EMOTION_COLORS[entry.emotion] || 'var(--accent)';
+          const primaryEmoji = EMOTION_EMOJI[entry.emotion]  || '💭';
+          const chipText     = CHIP_TEXT_DARK.has(entry.emotion) ? '#1C1B2E' : '#fff';
+          const primaryPct   = Math.round(entry.confidence * 100);
+          const isNew        = entry.id === newestId;
+
+          /* Secondary emotion (may be absent on old entries) */
+          const hasSecondary  = !!entry.secondaryEmotion;
+          const secHex        = hasSecondary ? (EMOTION_HEX[entry.secondaryEmotion] || '#6C63FF') : null;
+          const secEmoji      = hasSecondary ? (EMOTION_EMOJI[entry.secondaryEmotion] || '💭') : null;
+          const secondaryPct  = hasSecondary ? Math.round(entry.secondaryConfidence * 100) : 0;
+
+          const sentence = hasSecondary
+            ? blendSentence(entry.emotion, primaryPct, entry.secondaryEmotion, secondaryPct)
+            : null;
+
+          const hasBreakdown = entry.allScores?.length > 0;
 
           return (
             <GlassCard
@@ -374,30 +361,54 @@ function Dashboard() {
               className={isNew ? 'entry-new' : undefined}
               style={{ marginBottom: 12 }}
             >
-              {/* Top row: emotion chip + confidence % + date */}
+              {/* ── Top row: chips + date ── */}
               <div style={{ display: 'flex', justifyContent: 'space-between',
-                            alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+                            alignItems: 'flex-start', marginBottom: 10,
+                            flexWrap: 'wrap', gap: 8 }}>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {/* Emotion chip */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
+
+                  {/* Primary emotion chip */}
                   <span style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
-                    background: emoColor,
-                    color: chipText,
+                    background: primaryColor, color: chipText,
                     padding: '4px 13px', borderRadius: 20,
                     fontSize: 13, fontWeight: 700,
                     textTransform: 'capitalize', letterSpacing: '0.02em',
                   }}>
-                    {emoEmoji} {entry.emotion}
+                    {primaryEmoji} {entry.emotion}
                   </span>
-                  {/* Confidence % — subtle, next to chip */}
+
+                  {/* Primary confidence % */}
                   <span style={{ fontSize: 12, color: 'var(--text-secondary)',
                                  fontWeight: 500, whiteSpace: 'nowrap' }}>
-                    {pct}%
+                    {primaryPct}%
                   </span>
+
+                  {/* Secondary emotion chip — subtler, outline style */}
+                  {hasSecondary && (
+                    <>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', opacity: 0.5 }}>·</span>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: `${secHex}28`,
+                        border: `1px solid ${secHex}70`,
+                        color: 'var(--text-secondary)',
+                        padding: '3px 10px', borderRadius: 20,
+                        fontSize: 11, fontWeight: 600,
+                        textTransform: 'capitalize',
+                      }}>
+                        {secEmoji} {entry.secondaryEmotion}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-secondary)', opacity: 0.75 }}>
+                        {secondaryPct}%
+                      </span>
+                    </>
+                  )}
                 </div>
 
-                <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {/* Date */}
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                   {new Date(entry.createdAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric',
                     hour: '2-digit', minute: '2-digit',
@@ -405,22 +416,64 @@ function Dashboard() {
                 </span>
               </div>
 
-              {/* Entry text */}
+              {/* ── Blend sentence ── */}
+              {sentence && (
+                <p style={{ fontSize: 13, color: 'var(--text-secondary)',
+                            fontStyle: 'italic', marginBottom: 10, lineHeight: 1.5 }}>
+                  {sentence}
+                </p>
+              )}
+
+              {/* ── Entry text ── */}
               <p style={{ color: 'var(--text-primary)', lineHeight: 1.65, fontSize: 15 }}>
                 {entry.text}
               </p>
 
-              {/* Confidence bar */}
-              <div style={{ marginTop: 14 }}>
-                <div style={{ height: 4, background: 'rgba(128,128,128,0.14)',
-                              borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%', width: `${pct}%`,
-                    background: emoColor, borderRadius: 4,
-                    transition: 'width 0.7s ease',
-                  }} />
+              {/* ── Emotion breakdown ── */}
+              {hasBreakdown ? (
+                /* Full 6-emotion breakdown for new entries */
+                <div style={{ marginTop: 14, paddingTop: 12,
+                              borderTop: '1px solid rgba(128,128,128,0.1)' }}>
+                  {entry.allScores.map(({ label, score }) => {
+                    const pct   = Math.round(score * 100);
+                    const color = EMOTION_COLORS[label] || 'var(--accent)';
+                    return (
+                      <div key={label} style={{ display: 'flex', alignItems: 'center',
+                                               gap: 8, marginBottom: 5 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-secondary)',
+                                       width: 56, textAlign: 'right', flexShrink: 0,
+                                       textTransform: 'capitalize' }}>
+                          {label}
+                        </span>
+                        <div style={{ flex: 1, height: 3,
+                                      background: 'rgba(128,128,128,0.12)', borderRadius: 3 }}>
+                          <div style={{
+                            height: '100%', width: `${pct}%`,
+                            background: color, borderRadius: 3,
+                            transition: 'width 0.7s ease',
+                          }} />
+                        </div>
+                        <span style={{ fontSize: 10, color: 'var(--text-secondary)',
+                                       width: 26, textAlign: 'right', flexShrink: 0 }}>
+                          {pct}%
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              ) : (
+                /* Fallback single bar for entries saved before this feature */
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ height: 4, background: 'rgba(128,128,128,0.14)',
+                                borderRadius: 4, overflow: 'hidden' }}>
+                    <div style={{
+                      height: '100%', width: `${primaryPct}%`,
+                      background: primaryColor, borderRadius: 4,
+                      transition: 'width 0.7s ease',
+                    }} />
+                  </div>
+                </div>
+              )}
             </GlassCard>
           );
         })
