@@ -32,8 +32,8 @@ app.add_middleware(
 # ---- Load the trained model once, at startup ----
 classifier = pipeline(
     "text-classification",
-    model="model",
-    tokenizer="model",
+    model="mayaankhan16/moodscribe-emotion",
+    tokenizer="mayaankhan16/moodscribe-emotion",
 )
 
 # ---- Data shapes (Pydantic models) ----
