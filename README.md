@@ -5,7 +5,6 @@
 ### An AI-Powered Mental Health Journal
 
 </div>
-## 📸 Screenshots
 
 <div align="center">
   <img width="1920" height="1080" alt="Screenshot 2026-06-14 230315" src="https://github.com/user-attachments/assets/a2592aa7-3de5-44e1-b78f-83f061b8da4d" alt="Login screen" />
