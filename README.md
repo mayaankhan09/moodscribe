@@ -8,9 +8,10 @@
 ## 📸 Screenshots
 
 <div align="center">
-  <img src="screenshots/login.png" width="45%" alt="Login screen" />
-  <img src="screenshots/dashboard.png" width="45%" alt="Dashboard" />
+  <img width="1920" height="1080" alt="Screenshot 2026-06-14 230315" src="https://github.com/user-attachments/assets/a2592aa7-3de5-44e1-b78f-83f061b8da4d" alt="Login screen" />
+  <img width="1920" height="1080" alt="Screenshot 2026-06-14 230353" src="https://github.com/user-attachments/assets/d72158c2-69c9-4e75-ae87-e376fbd29eb0" width="45%" alt="Dashboard" />
 </div>
+
 
 ---
 
